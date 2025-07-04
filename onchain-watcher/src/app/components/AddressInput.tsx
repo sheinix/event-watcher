@@ -80,13 +80,13 @@ const AddressInput: React.FC<AddressInputProps> = ({ value, onChange, label, pla
 
   return (
     <div className="space-y-1">
-      {label && <label className="block text-sm font-medium text-gray-700">{label}</label>}
+      {label && <label className="block text-sm font-medium text-gray-900">{label}</label>}
       <input
         type="text"
         value={value}
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2 placeholder-gray-400 focus:border-purple-400 focus:ring-2 focus:ring-purple-200 outline-none transition"
+        className="w-full rounded-lg border border-gray-300 bg-white text-gray-900 px-4 py-2 placeholder-gray-500 focus:border-purple-400 focus:ring-2 focus:ring-purple-200 outline-none transition"
       />
       {loading && <div className="text-xs text-purple-600">Resolving…</div>}
       {resolved && !loading && (

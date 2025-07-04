@@ -36,7 +36,7 @@ const EventCard: React.FC<EventCardProps> = ({ event, decimals }) => {
       <p className="font-bold text-black mb-1">{event.eventName}</p>
       <div>
         <div className="flex items-center gap-2 mb-1">
-          <span className="font-bold">Tx:</span>
+          <span className="font-bold text-gray-900">Tx:</span>
           <a
             href={txUrl}
             target="_blank"
@@ -47,7 +47,7 @@ const EventCard: React.FC<EventCardProps> = ({ event, decimals }) => {
           </a>
         </div>
         <div className="flex items-center gap-2 mb-1">
-          <span className="font-bold">Block:</span>
+          <span className="font-bold text-gray-900">Block:</span>
           <a
             href={blockUrl}
             target="_blank"
@@ -58,7 +58,7 @@ const EventCard: React.FC<EventCardProps> = ({ event, decimals }) => {
           </a>
         </div>
         <div className="flex items-center gap-2 mb-1">
-          <span className="font-bold">From:</span>
+          <span className="font-bold text-gray-900">From:</span>
           {event.args.from ? (
             <a
               href={fromUrl}
@@ -69,11 +69,11 @@ const EventCard: React.FC<EventCardProps> = ({ event, decimals }) => {
               {event.args.from}
             </a>
           ) : (
-            <span className="font-mono text-xs text-gray-400">-</span>
+            <span className="font-mono text-xs text-gray-700">-</span>
           )}
         </div>
         <div className="flex items-center gap-2 mb-1">
-          <span className="font-bold">To:</span>
+          <span className="font-bold text-gray-900">To:</span>
           {event.args.to ? (
             <a
               href={toUrl}
@@ -84,11 +84,11 @@ const EventCard: React.FC<EventCardProps> = ({ event, decimals }) => {
               {event.args.to}
             </a>
           ) : (
-            <span className="font-mono text-xs text-gray-400">-</span>
+            <span className="font-mono text-xs text-gray-700">-</span>
           )}
         </div>
         <div className="flex items-center gap-2">
-          <span className="font-bold">Value:</span>
+          <span className="font-bold text-gray-900">Value:</span>
           <span className="font-mono text-xs bg-blue-50 text-blue-800 px-2 py-1 rounded outline outline-1 outline-blue-300 whitespace-nowrap overflow-x-auto">
             {event.args.value != null ? formatUnits(event.args.value, decimals) : 'N/A'}
           </span>

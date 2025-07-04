@@ -89,7 +89,7 @@ const EventWatcherForm: React.FC<EventWatcherFormProps> = ({
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* RPC WS URL */}
       <div className="space-y-1">
-        <label className="block text-sm font-medium text-gray-700">
+        <label className="block text-sm font-medium text-gray-900">
           RPC WS URL
         </label>
         <input
@@ -97,13 +97,13 @@ const EventWatcherForm: React.FC<EventWatcherFormProps> = ({
           value={rpcUrl}
           onChange={(e) => setRpcUrl(e.target.value)}
           placeholder="wss://your-node"
-          className="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2 placeholder-gray-400 focus:border-purple-400 focus:ring-2 focus:ring-purple-200 outline-none transition"
+          className="w-full rounded-lg border border-gray-300 bg-white text-gray-900 px-4 py-2 placeholder-gray-500 focus:border-purple-400 focus:ring-2 focus:ring-purple-200 outline-none transition"
           required
         />
       </div>
       {/* Contract Address */}
       <div className="space-y-1">
-        <label className="block text-sm font-medium text-gray-700">
+        <label className="block text-sm font-medium text-gray-900">
           Contract Address
         </label>
         <input
@@ -111,13 +111,13 @@ const EventWatcherForm: React.FC<EventWatcherFormProps> = ({
           value={contractAddress}
           onChange={(e) => setContractAddress(e.target.value)}
           placeholder="0x1234…"
-          className="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2 placeholder-gray-400 focus:border-purple-400 focus:ring-2 focus:ring-purple-200 outline-none transition"
+          className="w-full rounded-lg border border-gray-300 bg-white text-gray-900 px-4 py-2 placeholder-gray-500 focus:border-purple-400 focus:ring-2 focus:ring-purple-200 outline-none transition"
           required
         />
       </div>
       {/* Event Name */}
       <div className="space-y-1">
-        <label className="block text-sm font-medium text-gray-700">
+        <label className="block text-sm font-medium text-gray-900">
           Event Name
         </label>
         <EventNameComboBox
