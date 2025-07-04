@@ -5,9 +5,11 @@ type EventNameComboBoxProps = {
   value: string;
   onChange: (v: string) => void;
   allowCustom: boolean;
+  loading?: boolean;
+  error?: string | null;
 };
 
-const EventNameComboBox: React.FC<EventNameComboBoxProps> = ({ options, value, onChange, allowCustom }) => {
+const EventNameComboBox: React.FC<EventNameComboBoxProps> = ({ options, value, onChange, allowCustom, loading, error }) => {
   const isCustom = allowCustom && value && !options.includes(value);
 
   return (
@@ -22,13 +24,21 @@ const EventNameComboBox: React.FC<EventNameComboBoxProps> = ({ options, value, o
             onChange(e.target.value);
           }
         }}
+        disabled={loading}
       >
-        {options.map(opt => (
-          <option key={opt} value={opt}>{opt}</option>
-        ))}
-        {allowCustom && <option value="custom">Other...</option>}
+        {loading ? (
+          <option value="" disabled>Loading...</option>
+        ) : (
+          options.map(opt => (
+            <option key={opt} value={opt}>{opt}</option>
+          ))
+        )}
+        {allowCustom && !loading && <option value="custom">Other...</option>}
       </select>
-      {allowCustom && (isCustom || value === '') && (
+      {error && (
+        <div className="text-red-500 text-xs mt-1">{error}</div>
+      )}
+      {allowCustom && (isCustom || value === '') && !loading && (
         <input
           type="text"
           className="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2 placeholder-gray-400 focus:border-purple-400 focus:ring-2 focus:ring-purple-200 outline-none transition"

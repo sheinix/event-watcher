@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useRef, FormEvent, useEffect } from 'react';
+import { useState, useRef, FormEvent, useEffect, useCallback } from 'react';
 import { ethers, WebSocketProvider, formatEther, isAddress } from 'ethers';
 import erc20Abi from './erc20.json';
 import EventWatcherForm from './components/EventWatcherForm';
 import EventList from './components/EventList';
+import BottomLeftInfo from './components/BottomLeftInfo';
 
 // Minimal example ABI — only Transfer()
 // Replace this with your contract's full ABI for arbitrary events
@@ -41,12 +42,96 @@ export default function HomePage() {
   const [toError, setToError] = useState<string | null>(null);
   const [resolving, setResolving] = useState(false);
   const contractRef = useRef<any>(null); // Store contract instance for unsubscribing
+  const [listenerActive, setListenerActive] = useState(false); // track if listeners are attached
+
+  // Helper to attach listeners
+  const attachListeners = useCallback((contract: any, rpcUrl: string) => {
+    // Only keep a minimal log for listener attachment
+    // console.log('[DEBUG] Attaching listeners for event:', eventName, 'on contract:', contract.address || contract.target);
+    if (eventName === 'All Events') {
+      contract.on('*', (...args: any[]) => {
+        try {
+          const event = args[args.length - 1];
+          // console.log('[DEBUG] All Events received:', event);
+          setEventCount((c) => c + 1);
+          setEvents((prev) => [
+            {
+              args: event.args || {},
+              transactionHash: event.log.transactionHash,
+              blockNumber: event.log.blockNumber,
+              eventName: event.eventName || (event.fragment && event.fragment.name) || 'Unknown',
+              rpcUrl,
+            },
+            ...prev,
+          ].slice(0, 200)); // Keep only the last 200 events
+        } catch (err) {
+          console.error('[DEBUG] Error in event handler:', err);
+        }
+      });
+      return;
+    }
+    if (typeof (contract.filters as any)[eventName] !== 'function') {
+      // console.warn('[DEBUG] No filter function for event:', eventName);
+      return;
+    }
+    if (eventName === 'Transfer') {
+      contract.on(eventName, (from: any, to: any, value: any, event: any) => {
+        // console.log('[DEBUG] Transfer event received:', { from, to, value, event });
+        if (fromAddress && fromResolved && from.toLowerCase() !== fromResolved.toLowerCase()) return;
+        if (toAddress && toResolved && to.toLowerCase() !== toResolved.toLowerCase()) return;
+        setEventCount((c) => c + 1);
+        setEvents((prev) => [
+          {
+            args: { from, to, value },
+            transactionHash: event.log.transactionHash,
+            blockNumber: event.log.blockNumber,
+            eventName: event.eventName || (event.fragment && event.fragment.name) || 'Transfer',
+            rpcUrl,
+          },
+          ...prev,
+        ].slice(0, 200)); // Keep only the last 200 events
+      });
+      return;
+    }
+    contract.on(eventName, (...args: any[]) => {
+      const event = args[args.length - 1];
+      // console.log('[DEBUG] Event received for', eventName, ':', event);
+      setEventCount((c) => c + 1);
+      setEvents((prev) => [
+        {
+          args: event.args || {},
+          transactionHash: event.log.transactionHash,
+          blockNumber: event.log.blockNumber,
+          eventName: event.eventName || (event.fragment && event.fragment.name) || eventName,
+          rpcUrl,
+        },
+        ...prev,
+      ].slice(0, 200)); // Keep only the last 200 events
+    });
+  }, [eventName, fromAddress, fromResolved, toAddress, toResolved]);
+
+  // Switch event listeners when eventName changes, but keep events list
+  useEffect(() => {
+    if (!listening) return;
+    if (!contractRef.current) return;
+    // Remove all previous listeners
+    try {
+      contractRef.current.removeAllListeners();
+    } catch (e) {
+      contractRef.current.off && contractRef.current.off();
+    }
+    // Attach new listener for the selected event
+    attachListeners(contractRef.current, rpcUrl);
+    setListenerActive(true);
+    // Do NOT clear events state here, so previous events remain visible
+  }, [eventName]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (listening) return;
     setListening(true);
     setError(null);
+    setListenerActive(false);
     if (eventName === 'Transfer') {
       if (fromAddress && !fromResolved) {
         setFromError('Invalid from address');
@@ -61,6 +146,7 @@ export default function HomePage() {
     }
     try {
       const provider = new WebSocketProvider(rpcUrl);
+      // Remove contract/ABI debug logs
       const contract = new ethers.Contract(
         contractAddress,
         [
@@ -76,60 +162,11 @@ export default function HomePage() {
       } catch (decErr) {
         setDecimals(18);
       }
-      if (eventName === 'All Events') {
-        contract.on('*', (...args) => {
-          if (paused) return;
-          const event = args[args.length - 1];
-          setEventCount((c) => c + 1);
-          setEvents((prev) => [
-            {
-              args: event.args || {},
-              transactionHash: event.log.transactionHash,
-              blockNumber: event.log.blockNumber,
-              eventName: event.eventName || (event.fragment && event.fragment.name) || 'Unknown',
-            },
-            ...prev,
-          ]);
-        });
-        return;
-      }
-      if (typeof (contract.filters as any)[eventName] !== 'function') {
-        setError(`Event '${eventName}' not found in contract ABI.`);
-        setListening(false);
-        return;
-      }
-      if (eventName === 'Transfer') {
-        contract.on(eventName, (from, to, value, event) => {
-          if (paused) return;
-          if (fromAddress && fromResolved && from.toLowerCase() !== fromResolved.toLowerCase()) return;
-          if (toAddress && toResolved && to.toLowerCase() !== toResolved.toLowerCase()) return;
-          setEventCount((c) => c + 1);
-          setEvents((prev) => [
-            {
-              args: { from, to, value },
-              transactionHash: event.log.transactionHash,
-              blockNumber: event.log.blockNumber,
-              eventName: event.eventName || (event.fragment && event.fragment.name) || 'Transfer',
-            },
-            ...prev,
-          ]);
-        });
-        return;
-      }
-      contract.on(eventName, (...args) => {
-        if (paused) return;
-        const event = args[args.length - 1];
-        setEventCount((c) => c + 1);
-        setEvents((prev) => [
-          {
-            args: event.args || {},
-            transactionHash: event.log.transactionHash,
-            blockNumber: event.log.blockNumber,
-            eventName: event.eventName || (event.fragment && event.fragment.name) || eventName,
-          },
-          ...prev,
-        ]);
-      });
+      setEvents([]);
+      setEventCount(0);
+      attachListeners(contract, rpcUrl);
+      setListenerActive(true);
+      // Remove contract object debug logs
     } catch (err) {
       console.error('Subscription error:', err);
       setListening(false);
@@ -138,24 +175,16 @@ export default function HomePage() {
 
   // Stop listening handler
   function handleStop() {
-    if (contractRef.current && typeof contractRef.current.off === 'function') {
-      try {
-        if (eventName === 'All Events') {
-          contractRef.current.removeAllListeners();
-        } else {
-          contractRef.current.removeAllListeners(eventName);
-        }
-      } catch (e) {
-        // fallback for ethers v5
-        if (eventName === 'All Events') {
-          contractRef.current.off();
-        } else {
-          contractRef.current.off(eventName);
-        }
+    if (contractRef.current) {
+      if (typeof contractRef.current.removeAllListeners === 'function') {
+        contractRef.current.removeAllListeners();
+      } else if (typeof contractRef.current.off === 'function') {
+        contractRef.current.off();
       }
     }
     setListening(false);
     setPaused(false);
+    setListenerActive(false);
     setEventCount(0);
   }
 
@@ -249,17 +278,20 @@ export default function HomePage() {
     }
   }, [toAddress]);
 
+  // Always show events, even when paused
+  const visibleEvents = events;
+
   return (
     <main className="min-h-screen bg-purple-50 flex p-6 space-x-6">
       {/* Left Panel: Inputs & Controls */}
-      <div className="w-1/3 bg-white rounded-2xl shadow-xl p-8 space-y-6">
+      <div className="w-1/3 bg-white rounded-2xl shadow-xl p-8 space-y-6 self-start">
         {error && (
           <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg border border-red-300 text-center">
             {error}
           </div>
         )}
         <h1 className="text-3xl font-bold text-gray-800 text-center">
-          On-Chain Event Watcher
+          On-Chain Event Monitor
         </h1>
         <EventWatcherForm
           rpcUrl={rpcUrl}
@@ -279,19 +311,23 @@ export default function HomePage() {
           setFromAddress={setFromAddress}
           toAddress={toAddress}
           setToAddress={setToAddress}
-          fromError={fromError}
-          toError={toError}
-          resolving={resolving}
+          fromResolved={fromResolved}
+          setFromResolved={setFromResolved}
+          toResolved={toResolved}
+          setToResolved={setToResolved}
         />
       </div>
       {/* Right Panel: Log Viewer */}
-      <EventList
-        events={events}
-        eventName={eventName}
-        eventCount={eventCount}
-        decimals={decimals}
-        contractAddress={contractAddress}
-      />
+      <div className="flex-1 flex flex-col">
+        <EventList
+          events={visibleEvents}
+          eventName={eventName}
+          eventCount={eventCount}
+          decimals={decimals}
+          contractAddress={contractAddress}
+        />
+      </div>
+      <BottomLeftInfo />
     </main>
   );
 }
