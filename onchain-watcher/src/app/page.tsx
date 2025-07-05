@@ -33,11 +33,7 @@ export default function HomePage() {
   const [toAddress, setToAddress] = useState('');
   const [fromResolved, setFromResolved] = useState<string | null>(null);
   const [toResolved, setToResolved] = useState<string | null>(null);
-  const [fromError, setFromError] = useState<string | null>(null);
-  const [toError, setToError] = useState<string | null>(null);
-  const [resolving, setResolving] = useState(false);
   const contractRef = useRef<ethers.Contract | null>(null); // Store contract instance for unsubscribing
-  const [listenerActive, setListenerActive] = useState(false); // track if listeners are attached
 
   // Helper to attach listeners
   const attachListeners = useCallback((contract: ethers.Contract, rpcUrl: string) => {
@@ -112,12 +108,11 @@ export default function HomePage() {
     // Remove all previous listeners
     try {
       contractRef.current.removeAllListeners();
-    } catch (error) {
+    } catch {
       contractRef.current.off && contractRef.current.off('*');
     }
     // Attach new listener for the selected event
     attachListeners(contractRef.current, rpcUrl);
-    setListenerActive(true);
     // Do NOT clear events state here, so previous events remain visible
   }, [eventName, listening, attachListeners, rpcUrl]);
 
@@ -126,15 +121,14 @@ export default function HomePage() {
     if (listening) return;
     setListening(true);
     setError(null);
-    setListenerActive(false);
     if (eventName === 'Transfer') {
       if (fromAddress && !fromResolved) {
-        setFromError('Invalid from address');
+        setError('Invalid from address');
         setListening(false);
         return;
       }
       if (toAddress && !toResolved) {
-        setToError('Invalid to address');
+        setError('Invalid to address');
         setListening(false);
         return;
       }
@@ -154,13 +148,12 @@ export default function HomePage() {
       try {
         const d = await contract.decimals();
         setDecimals(Number(d));
-      } catch (error) {
+      } catch {
         setDecimals(18);
       }
       setEvents([]);
       setEventCount(0);
       attachListeners(contract, rpcUrl);
-      setListenerActive(true);
       // Remove contract object debug logs
     } catch (err) {
       console.error('Subscription error:', err);
@@ -179,14 +172,11 @@ export default function HomePage() {
     }
     setListening(false);
     setPaused(false);
-    setListenerActive(false);
     setEventCount(0);
   }
 
   useEffect(() => {
     setError(null);
-    setFromError(null);
-    setToError(null);
     setFromResolved(null);
     setToResolved(null);
   }, [eventName]);
@@ -194,82 +184,64 @@ export default function HomePage() {
   useEffect(() => {
     let ignore = false;
     if (!fromAddress) {
-      setFromError(null);
       setFromResolved(null);
-      setResolving(false);
       return;
     }
     if (isAddress(fromAddress)) {
-      setFromError(null);
       setFromResolved(fromAddress);
-      setResolving(false);
       return;
     }
     if (String(fromAddress).endsWith('.eth')) {
-      setResolving(true);
       ethers.getDefaultProvider().resolveName(fromAddress).then(resolved => {
         if (ignore) return;
         if (resolved) {
-          setFromError(null);
           setFromResolved(resolved);
         } else {
-          setFromError('ENS name could not be resolved');
+          setError('ENS name could not be resolved');
           setFromResolved(null);
         }
-        setResolving(false);
-      }).catch((error) => {
+      }).catch(() => {
         if (!ignore) {
-          setFromError('ENS name could not be resolved');
+          setError('ENS name could not be resolved');
           setFromResolved(null);
-          setResolving(false);
         }
       });
-      return () => { ignore = true; setResolving(false); };
+      return () => { ignore = true; };
     } else {
-      setFromError('Invalid from address');
+      setError('Invalid from address');
       setFromResolved(null);
-      setResolving(false);
     }
   }, [fromAddress]);
 
   useEffect(() => {
     let ignore = false;
     if (!toAddress) {
-      setToError(null);
       setToResolved(null);
-      setResolving(false);
       return;
     }
     if (isAddress(toAddress)) {
-      setToError(null);
       setToResolved(toAddress);
-      setResolving(false);
       return;
     }
     if (String(toAddress).endsWith('.eth')) {
-      setResolving(true);
       ethers.getDefaultProvider().resolveName(toAddress).then(resolved => {
         if (ignore) return;
         if (resolved) {
-          setToError(null);
           setToResolved(resolved);
         } else {
-          setToError('ENS name could not be resolved');
+          setError('ENS name could not be resolved');
           setToResolved(null);
         }
-        setResolving(false);
-      }).catch((error) => {
+      }).catch(() => {
         if (!ignore) {
-          setToError('ENS name could not be resolved');
+          setError('ENS name could not be resolved');
           setToResolved(null);
-          setResolving(false);
         }
       });
-      return () => { ignore = true; setResolving(false); };
+      return () => { ignore = true; };
     } else {
-      setToError('Invalid to address');
+      setError('Invalid to address');
       setToResolved(null);
-      setResolving(false);
     }
   }, [toAddress]);
 
