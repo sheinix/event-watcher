@@ -109,7 +109,9 @@ export default function HomePage() {
     try {
       contractRef.current.removeAllListeners();
     } catch {
-      contractRef.current.off && contractRef.current.off('*');
+      if (contractRef.current.off) {
+        contractRef.current.off('*');
+      }
     }
     // Attach new listener for the selected event
     attachListeners(contractRef.current, rpcUrl);
