@@ -20,7 +20,7 @@ type ParsedEvent = {
 };
 
 export default function HomePage() {
-  const [rpcUrl, setRpcUrl] = useState('wss://eth-mainnet.g.alchemy.com/v2/NusaomPiBicIShMt-rEsL_fy4wJkWgq9');
+  const [rpcUrl, setRpcUrl] = useState('');
   const [contractAddress, setContractAddress] = useState('');
   const [eventName, setEventName] = useState('');
   const [listening, setListening] = useState(false);
