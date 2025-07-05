@@ -1,14 +1,16 @@
 import { getChainIdFromRpcUrl } from './getExplorerTxUrl';
 
-export async function fetchAbi(address: string): Promise<any[]> {
+export async function fetchAbi(address: string, rpcUrl: string): Promise<any[]> {
   const key = process.env.NEXT_PUBLIC_ETHERSCAN_KEY;
   const esc = (s: string) => encodeURIComponent(s);
+  const chainId = getChainIdFromRpcUrl(rpcUrl);
 
   // 1️⃣ Query getsourcecode to detect proxy & find implementation
   const srcRes = await fetch(
-    `https://api.etherscan.io/api` +
-      `?module=contract` +
+    `https://api.etherscan.io/v2/api` +
+      `?chainid=${chainId}` +
       `&action=getsourcecode` +
+      `&module=contract` +
       `&address=${esc(address)}` +
       `&apikey=${esc(key!)}`,
   );
@@ -24,9 +26,10 @@ export async function fetchAbi(address: string): Promise<any[]> {
 
   // 2️⃣ Fetch the ABI (for proxy or implementation as needed)
   const abiRes = await fetch(
-    `https://api.etherscan.io/api` +
-      `?module=contract` +
+    `https://api.etherscan.io/v2/api` +
+      `?chainid=${chainId}` +
       `&action=getabi` +
+      `&module=contract` +
       `&address=${esc(target)}` +
       `&apikey=${esc(key!)}`,
   );

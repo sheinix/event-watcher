@@ -325,6 +325,7 @@ export default function HomePage() {
           eventCount={eventCount}
           decimals={decimals}
           contractAddress={contractAddress}
+          rpcUrl={rpcUrl}
         />
       </div>
       <BottomLeftInfo />

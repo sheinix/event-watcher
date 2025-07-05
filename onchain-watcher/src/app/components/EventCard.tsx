@@ -17,9 +17,78 @@ const EventCard: React.FC<EventCardProps> = ({ event, decimals }) => {
   const rpcUrl = event.rpcUrl || '';
   const txUrl = getExplorerTxUrl(rpcUrl, event.transactionHash);
   const blockUrl = txUrl.replace(/\/tx\/.*/, `/block/${event.blockNumber}`);
-  const fromUrl = event.args.from ? txUrl.replace(/\/tx\/.*/, `/address/${event.args.from}`) : undefined;
-  const toUrl = event.args.to ? txUrl.replace(/\/tx\/.*/, `/address/${event.args.to}`) : undefined;
   const txEventLogUrl = `${txUrl}#eventlog`;
+
+  // Helper function to render a parameter value
+  const renderParameterValue = (key: string, value: any) => {
+    const isAddress = typeof value === 'string' && value.startsWith('0x') && value.length === 42;
+    const isValue = key.toLowerCase().includes('value') || key.toLowerCase().includes('amount');
+    
+    if (isAddress) {
+      const addressUrl = txUrl.replace(/\/tx\/.*/, `/address/${value}`);
+      return (
+        <a
+          href={addressUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-mono text-xs bg-blue-50 text-blue-800 px-2 py-1 rounded outline outline-1 outline-blue-300 hover:bg-blue-100 hover:outline-blue-500 transition whitespace-nowrap overflow-x-auto"
+        >
+          {value}
+        </a>
+      );
+    } else if (isValue && value != null) {
+      return (
+        <span className="font-mono text-xs bg-blue-50 text-blue-800 px-2 py-1 rounded outline outline-1 outline-blue-300 whitespace-nowrap overflow-x-auto">
+          {formatUnits(value, decimals)}
+        </span>
+      );
+    } else {
+      return (
+        <span className="font-mono text-xs bg-blue-50 text-blue-800 px-2 py-1 rounded outline outline-1 outline-blue-300 whitespace-nowrap overflow-x-auto">
+          {value != null ? String(value) : 'N/A'}
+        </span>
+      );
+    }
+  };
+
+  // Get event parameters to display
+  const getEventParameters = () => {
+    const args = event.args || {};
+    const eventName = event.eventName || '';
+    
+    // Special handling for Transfer event
+    if (eventName === 'Transfer') {
+      return [
+        { key: 'from', value: args.from, label: 'From' },
+        { key: 'to', value: args.to, label: 'To' },
+        { key: 'value', value: args.value, label: 'Value' }
+      ];
+    }
+    
+    // Special handling for Approval event
+    if (eventName === 'Approval') {
+      return [
+        { key: 'owner', value: args.owner, label: 'Owner' },
+        { key: 'spender', value: args.spender, label: 'Spender' },
+        { key: 'value', value: args.value, label: 'Value' }
+      ];
+    }
+    
+    // For other events, show all parameters (up to 4)
+    const parameters = Object.entries(args)
+      .filter(([key, value]) => value != null && value !== undefined)
+      .slice(0, 4) // Limit to 4 parameters
+      .map(([key, value]) => ({
+        key,
+        value,
+        label: key.charAt(0).toUpperCase() + key.slice(1) // Capitalize first letter
+      }));
+    
+    return parameters;
+  };
+
+  const parameters = getEventParameters();
+
   return (
     <div className="relative p-3 bg-gray-50 rounded-lg border border-gray-200">
       {/* Top-right event log link */}
@@ -32,11 +101,14 @@ const EventCard: React.FC<EventCardProps> = ({ event, decimals }) => {
       >
         View on Explorer
       </a>
+      
       {/* Event Name */}
-      <p className="font-bold text-black mb-1">{event.eventName}</p>
-      <div>
-        <div className="flex items-center gap-2 mb-1">
-          <span className="font-bold text-gray-900">Tx:</span>
+      <p className="font-bold text-black mb-2">{event.eventName}</p>
+      
+      <div className="space-y-1">
+        {/* Transaction Hash */}
+        <div className="flex items-center gap-2">
+          <span className="font-bold text-gray-900 text-sm">Tx:</span>
           <a
             href={txUrl}
             target="_blank"
@@ -46,8 +118,10 @@ const EventCard: React.FC<EventCardProps> = ({ event, decimals }) => {
             {event.transactionHash}
           </a>
         </div>
-        <div className="flex items-center gap-2 mb-1">
-          <span className="font-bold text-gray-900">Block:</span>
+        
+        {/* Block Number */}
+        <div className="flex items-center gap-2">
+          <span className="font-bold text-gray-900 text-sm">Block:</span>
           <a
             href={blockUrl}
             target="_blank"
@@ -57,42 +131,14 @@ const EventCard: React.FC<EventCardProps> = ({ event, decimals }) => {
             {event.blockNumber}
           </a>
         </div>
-        <div className="flex items-center gap-2 mb-1">
-          <span className="font-bold text-gray-900">From:</span>
-          {event.args.from ? (
-            <a
-              href={fromUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-mono text-xs bg-blue-50 text-blue-800 px-2 py-1 rounded outline outline-1 outline-blue-300 hover:bg-blue-100 hover:outline-blue-500 transition whitespace-nowrap overflow-x-auto"
-            >
-              {event.args.from}
-            </a>
-          ) : (
-            <span className="font-mono text-xs text-gray-700">-</span>
-          )}
-        </div>
-        <div className="flex items-center gap-2 mb-1">
-          <span className="font-bold text-gray-900">To:</span>
-          {event.args.to ? (
-            <a
-              href={toUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-mono text-xs bg-blue-50 text-blue-800 px-2 py-1 rounded outline outline-1 outline-blue-300 hover:bg-blue-100 hover:outline-blue-500 transition whitespace-nowrap overflow-x-auto"
-            >
-              {event.args.to}
-            </a>
-          ) : (
-            <span className="font-mono text-xs text-gray-700">-</span>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="font-bold text-gray-900">Value:</span>
-          <span className="font-mono text-xs bg-blue-50 text-blue-800 px-2 py-1 rounded outline outline-1 outline-blue-300 whitespace-nowrap overflow-x-auto">
-            {event.args.value != null ? formatUnits(event.args.value, decimals) : 'N/A'}
-          </span>
-        </div>
+        
+        {/* Dynamic Event Parameters */}
+        {parameters.map((param) => (
+          <div key={param.key} className="flex items-center gap-2">
+            <span className="font-bold text-gray-900 text-sm">{param.label}:</span>
+            {renderParameterValue(param.key, param.value)}
+          </div>
+        ))}
       </div>
     </div>
   );

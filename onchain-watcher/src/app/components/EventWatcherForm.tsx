@@ -83,7 +83,7 @@ const EventWatcherForm: React.FC<EventWatcherFormProps> = ({
         setEventOptions(['All Events']);
         setLoadingEvents(false);
       });
-  }, [contractAddress]);
+  }, [contractAddress, rpcUrl]);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">

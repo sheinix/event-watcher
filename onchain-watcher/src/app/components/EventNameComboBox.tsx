@@ -12,6 +12,9 @@ type EventNameComboBoxProps = {
 const EventNameComboBox: React.FC<EventNameComboBoxProps> = ({ options, value, onChange, allowCustom, loading, error }) => {
   const isCustom = allowCustom && value && !options.includes(value);
 
+  // Deduplicate options
+  const uniqueOptions = Array.from(new Set(options));
+
   return (
     <div className="space-y-2">
       <select
@@ -29,7 +32,7 @@ const EventNameComboBox: React.FC<EventNameComboBoxProps> = ({ options, value, o
         {loading ? (
           <option value="" disabled>Loading...</option>
         ) : (
-          options.map(opt => (
+          uniqueOptions.map(opt => (
             <option key={opt} value={opt}>{opt}</option>
           ))
         )}
