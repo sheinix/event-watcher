@@ -4,7 +4,7 @@ import { getExplorerTxUrl } from '../utils/getExplorerTxUrl';
 
 type EventCardProps = {
   event: {
-    args: Record<string, any>;
+    args: Record<string, unknown>;
     transactionHash: string;
     blockNumber: number;
     eventName?: string;
@@ -20,7 +20,7 @@ const EventCard: React.FC<EventCardProps> = ({ event, decimals }) => {
   const txEventLogUrl = `${txUrl}#eventlog`;
 
   // Helper function to render a parameter value
-  const renderParameterValue = (key: string, value: any) => {
+  const renderParameterValue = (key: string, value: unknown) => {
     const isAddress = typeof value === 'string' && value.startsWith('0x') && value.length === 42;
     const isValue = key.toLowerCase().includes('value') || key.toLowerCase().includes('amount');
     
@@ -39,7 +39,7 @@ const EventCard: React.FC<EventCardProps> = ({ event, decimals }) => {
     } else if (isValue && value != null) {
       return (
         <span className="font-mono text-xs bg-blue-50 text-blue-800 px-2 py-1 rounded outline outline-1 outline-blue-300 whitespace-nowrap overflow-x-auto">
-          {formatUnits(value, decimals)}
+          {formatUnits(value as string, decimals)}
         </span>
       );
     } else {
@@ -76,7 +76,7 @@ const EventCard: React.FC<EventCardProps> = ({ event, decimals }) => {
     
     // For other events, show all parameters (up to 4)
     const parameters = Object.entries(args)
-      .filter(([key, value]) => value != null && value !== undefined)
+      .filter(([, value]) => value != null && value !== undefined)
       .slice(0, 4) // Limit to 4 parameters
       .map(([key, value]) => ({
         key,

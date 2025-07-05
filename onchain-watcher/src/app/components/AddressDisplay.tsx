@@ -27,7 +27,7 @@ const AddressDisplay: React.FC<AddressDisplayProps> = ({ address }) => {
           const name = await provider.lookupAddress(address);
           if (!ignore && name) setEns(name);
         }
-      } catch (e) {
+      } catch {
         // ignore errors
       } finally {
         if (!ignore) setLoading(false);

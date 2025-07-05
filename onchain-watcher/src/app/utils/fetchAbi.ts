@@ -1,6 +1,6 @@
 import { getChainIdFromRpcUrl } from './getExplorerTxUrl';
 
-export async function fetchAbi(address: string, rpcUrl: string): Promise<any[]> {
+export async function fetchAbi(address: string, rpcUrl: string): Promise<unknown[]> {
   const key = process.env.NEXT_PUBLIC_ETHERSCAN_KEY;
   const esc = (s: string) => encodeURIComponent(s);
   const chainId = getChainIdFromRpcUrl(rpcUrl);
@@ -37,7 +37,7 @@ export async function fetchAbi(address: string, rpcUrl: string): Promise<any[]> 
   if (abiJson.status !== '1') {
     throw new Error(`ABI not found for ${target}: ${abiJson.result}`);
   }
-  return JSON.parse(abiJson.result) as any[];
+  return JSON.parse(abiJson.result) as unknown[];
 }
 
 export default fetchAbi;

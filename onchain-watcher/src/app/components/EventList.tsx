@@ -5,7 +5,7 @@ import { VariableSizeList as List } from 'react-window';
 
 type EventListProps = {
   events: Array<{
-    args: Record<string, any>;
+    args: Record<string, unknown>;
     transactionHash: string;
     blockNumber: number;
     eventName?: string;
@@ -28,7 +28,7 @@ const EventList: React.FC<EventListProps> = ({ events, eventName, eventCount, de
   const LIST_HEIGHT = 85 * 16; // max-h-[85vh] in px (1rem = 16px)
 
   // Ref for VariableSizeList
-  const listRef = useRef<any>(null);
+  const listRef = useRef<List | null>(null);
 
   // Force list to recalculate row heights when events change
   useEffect(() => {
@@ -46,7 +46,7 @@ const EventList: React.FC<EventListProps> = ({ events, eventName, eventCount, de
     const eventName = event.eventName || '';
     
     // Base height for card structure
-    let baseHeight = 120; // Event name, tx, block, and padding
+    const baseHeight = 120; // Event name, tx, block, and padding
     
     // Add height for each parameter
     let parameterCount = 0;
@@ -58,7 +58,7 @@ const EventList: React.FC<EventListProps> = ({ events, eventName, eventCount, de
     } else {
       // For other events, count actual parameters (up to 4)
       parameterCount = Math.min(
-        Object.entries(args).filter(([key, value]) => value != null && value !== undefined).length,
+        Object.entries(args).filter(([, value]) => value != null && value !== undefined).length,
         4
       );
     }

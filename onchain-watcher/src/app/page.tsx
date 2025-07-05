@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, FormEvent, useEffect, useCallback } from 'react';
-import { ethers, WebSocketProvider, formatEther, isAddress } from 'ethers';
+import { ethers, WebSocketProvider, isAddress } from 'ethers';
 import erc20Abi from './erc20.json';
 import EventWatcherForm from './components/EventWatcherForm';
 import EventList from './components/EventList';
@@ -11,17 +11,12 @@ import BottomLeftInfo from './components/BottomLeftInfo';
 // Replace this with your contract's full ABI for arbitrary events
 const ERC20_ABI = erc20Abi;
 
-type EthersEvent = {
-  args?: Record<string, any>;
-  transactionHash: string;
-  blockNumber: number;
-  // Add more fields if needed
-};
-
 type ParsedEvent = {
-  args: Record<string, any>;
+  args: Record<string, unknown>;
   transactionHash: string;
   blockNumber: number;
+  eventName?: string;
+  rpcUrl?: string;
 };
 
 export default function HomePage() {
@@ -41,17 +36,17 @@ export default function HomePage() {
   const [fromError, setFromError] = useState<string | null>(null);
   const [toError, setToError] = useState<string | null>(null);
   const [resolving, setResolving] = useState(false);
-  const contractRef = useRef<any>(null); // Store contract instance for unsubscribing
+  const contractRef = useRef<ethers.Contract | null>(null); // Store contract instance for unsubscribing
   const [listenerActive, setListenerActive] = useState(false); // track if listeners are attached
 
   // Helper to attach listeners
-  const attachListeners = useCallback((contract: any, rpcUrl: string) => {
+  const attachListeners = useCallback((contract: ethers.Contract, rpcUrl: string) => {
     // Only keep a minimal log for listener attachment
     // console.log('[DEBUG] Attaching listeners for event:', eventName, 'on contract:', contract.address || contract.target);
     if (eventName === 'All Events') {
-      contract.on('*', (...args: any[]) => {
+      contract.on('*', (...args: unknown[]) => {
         try {
-          const event = args[args.length - 1];
+          const event = args[args.length - 1] as { args?: Record<string, unknown>; log: { transactionHash: string; blockNumber: number }; eventName?: string; fragment?: { name: string } };
           // console.log('[DEBUG] All Events received:', event);
           setEventCount((c) => c + 1);
           setEvents((prev) => [
@@ -70,15 +65,15 @@ export default function HomePage() {
       });
       return;
     }
-    if (typeof (contract.filters as any)[eventName] !== 'function') {
+    if (typeof (contract.filters as Record<string, unknown>)[eventName] !== 'function') {
       // console.warn('[DEBUG] No filter function for event:', eventName);
       return;
     }
     if (eventName === 'Transfer') {
-      contract.on(eventName, (from: any, to: any, value: any, event: any) => {
+      contract.on(eventName, (from: unknown, to: unknown, value: unknown, event: { log: { transactionHash: string; blockNumber: number }; eventName?: string; fragment?: { name: string } }) => {
         // console.log('[DEBUG] Transfer event received:', { from, to, value, event });
-        if (fromAddress && fromResolved && from.toLowerCase() !== fromResolved.toLowerCase()) return;
-        if (toAddress && toResolved && to.toLowerCase() !== toResolved.toLowerCase()) return;
+        if (fromAddress && fromResolved && (from as string).toLowerCase() !== fromResolved.toLowerCase()) return;
+        if (toAddress && toResolved && (to as string).toLowerCase() !== toResolved.toLowerCase()) return;
         setEventCount((c) => c + 1);
         setEvents((prev) => [
           {
@@ -93,8 +88,8 @@ export default function HomePage() {
       });
       return;
     }
-    contract.on(eventName, (...args: any[]) => {
-      const event = args[args.length - 1];
+    contract.on(eventName, (...args: unknown[]) => {
+      const event = args[args.length - 1] as { args?: Record<string, unknown>; log: { transactionHash: string; blockNumber: number }; eventName?: string; fragment?: { name: string } };
       // console.log('[DEBUG] Event received for', eventName, ':', event);
       setEventCount((c) => c + 1);
       setEvents((prev) => [
@@ -117,14 +112,14 @@ export default function HomePage() {
     // Remove all previous listeners
     try {
       contractRef.current.removeAllListeners();
-    } catch (e) {
-      contractRef.current.off && contractRef.current.off();
+    } catch (error) {
+      contractRef.current.off && contractRef.current.off('*');
     }
     // Attach new listener for the selected event
     attachListeners(contractRef.current, rpcUrl);
     setListenerActive(true);
     // Do NOT clear events state here, so previous events remain visible
-  }, [eventName]);
+  }, [eventName, listening, attachListeners, rpcUrl]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -159,7 +154,7 @@ export default function HomePage() {
       try {
         const d = await contract.decimals();
         setDecimals(Number(d));
-      } catch (decErr) {
+      } catch (error) {
         setDecimals(18);
       }
       setEvents([]);
@@ -179,7 +174,7 @@ export default function HomePage() {
       if (typeof contractRef.current.removeAllListeners === 'function') {
         contractRef.current.removeAllListeners();
       } else if (typeof contractRef.current.off === 'function') {
-        contractRef.current.off();
+        contractRef.current.off('*');
       }
     }
     setListening(false);
@@ -222,7 +217,7 @@ export default function HomePage() {
           setFromResolved(null);
         }
         setResolving(false);
-      }).catch(() => {
+      }).catch((error) => {
         if (!ignore) {
           setFromError('ENS name could not be resolved');
           setFromResolved(null);
@@ -263,7 +258,7 @@ export default function HomePage() {
           setToResolved(null);
         }
         setResolving(false);
-      }).catch(() => {
+      }).catch((error) => {
         if (!ignore) {
           setToError('ENS name could not be resolved');
           setToResolved(null);
