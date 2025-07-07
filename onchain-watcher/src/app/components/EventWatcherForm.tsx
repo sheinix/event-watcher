@@ -2,14 +2,18 @@ import React, { FormEvent, useEffect, useState } from 'react';
 import EventNameComboBox from './EventNameComboBox';
 import AddressInput from './AddressInput';
 import fetchAbi from '../utils/fetchAbi';
-import { Interface, Fragment } from 'ethers';
+import { Interface, JsonFragment } from 'ethers';
 
-function getEventNames(abi: any[]): string[] {
-  const iface = new Interface(abi);
-  // ethers v6+ does not expose iface.events, so filter fragments
-  return iface.fragments
-    .filter((frag: any) => frag.type === 'event')
-    .map((frag: any) => frag.name);
+function getEventNames(abi: unknown[]): string[] {
+  try {
+    const iface = new Interface(abi as JsonFragment[]);
+    // ethers v6+ does not expose iface.events, so filter fragments
+    return iface.fragments
+      .filter((frag: unknown) => (frag as { type: string }).type === 'event')
+      .map((frag: unknown) => (frag as { name: string }).name);
+  } catch {
+    return [];
+  }
 }
 
 type EventWatcherFormProps = {
@@ -22,7 +26,13 @@ type EventWatcherFormProps = {
   listening: boolean;
   paused: boolean;
   setPaused: (v: (p: boolean) => boolean) => void;
-  setEvents: (v: any) => void;
+  setEvents: React.Dispatch<React.SetStateAction<Array<{
+    args: Record<string, unknown>;
+    transactionHash: string;
+    blockNumber: number;
+    eventName?: string;
+    rpcUrl?: string;
+  }>>>;
   setEventCount: (v: number) => void;
   handleSubmit: (e: FormEvent) => void;
   handleStop: () => void;
@@ -78,12 +88,12 @@ const EventWatcherForm: React.FC<EventWatcherFormProps> = ({
         setEventOptions(['All Events', ...names]);
         setLoadingEvents(false);
       })
-      .catch((err) => {
+      .catch(() => {
         setAbiError('Contract not verified. Input your own custom event name.');
         setEventOptions(['All Events']);
         setLoadingEvents(false);
       });
-  }, [contractAddress]);
+  }, [contractAddress, rpcUrl]);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">

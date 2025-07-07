@@ -6,8 +6,8 @@ const BottomLeftInfo: React.FC = () => (
       <span className="font-semibold">How to use:</span>
       <ol className="list-decimal list-inside ml-4 mt-1">
         <li>
-          Grab a WebSocket RPC URL from
-          <a href="https://www.alchemy.com/" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline ml-1">Alchemy</a>
+          Grab a WebSocket RPC URL from 
+          <a href="https://www.alchemy.com/" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline ml-1 mr-1">Alchemy</a>
           or
           <a href="https://www.infura.io/" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline ml-1">Infura</a>.
         </li>
